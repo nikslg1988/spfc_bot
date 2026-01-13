@@ -4,6 +4,8 @@ from aiogram.filters import Command
 
 from states.registration import Registration
 from keyboards.gender import gender_keyboard
+from keyboards.activity import activity_keyboard
+
 from services.validators import validate_int
 
 
@@ -53,17 +55,37 @@ def register_registration_handlers(dp):
     @dp.callback_query(Registration.gender, F.data.startswith("gender_"))
     async def gender_handler(callback: types.CallbackQuery, state: FSMContext):
         gender = "male" if callback.data == "gender_male" else "female"
+        
+        if callback.message is None:
+            await callback.answer("Ошибка", show_alert=True)
+            return
+        
         await state.update_data(gender=gender)
+        await callback.message.answer("Выберите уровень активности: ",
+                                      reply_markup=activity_keyboard())
+        await state.set_state(Registration.activity)
+        await callback.answer()
 
+
+    
+    @dp.callback_query(Registration.activity)
+    async def activity_handler(callback: types.CallbackQuery, state: FSMContext):
+        await callback.answer()
+        await state.update_data(activity=callback.data)
+        
         data = await state.get_data()
+        if callback.message is None:
+            await callback.answer("Ошибка", show_alert=True)
+            return
         
         await callback.message.edit_text( # type: ignore
             f"Регистрация завершена ✅\n"
             f"Рост: {data['height']} см\n"
             f"Вес: {data['weight']} кг\n"
             f"Возраст: {data['age']}\n"
-            f"Пол: {gender}"
+            f"Пол: {data['gender']}\n"
+            f"Активность: {data['activity']}"
         )
-
-        await callback.answer()
         await state.clear()
+
+   

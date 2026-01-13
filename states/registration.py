@@ -5,3 +5,4 @@ class Registration(StatesGroup):
     weight = State()
     age = State()
     gender = State()
+    activity = State()
