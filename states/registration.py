@@ -6,3 +6,4 @@ class Registration(StatesGroup):
     age = State()
     gender = State()
     activity = State()
+    goal = State()
