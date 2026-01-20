@@ -9,6 +9,7 @@ from utils.logger import setup_logging
 import logging
 
 
+
 async def main():
     
     setup_logging()

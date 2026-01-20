@@ -8,6 +8,8 @@ from keyboards.activity import activity_keyboard
 
 from keyboards.goal import goal_keyboard
 from services.validators import validate_int
+from services.calories import calculate_calories
+
 
 
 def register_registration_handlers(dp):
@@ -88,7 +90,7 @@ def register_registration_handlers(dp):
             await callback.answer("Ошибка", show_alert=True)
             return
 
-        await state.update_data(activity=callback.data.replace("activity_", ""))
+        await state.update_data(activity=callback.data.replace("activity_", "")) # type: ignore
         await callback.message.answer(
             "Выберите цель:",
             reply_markup=goal_keyboard()
@@ -106,19 +108,23 @@ def register_registration_handlers(dp):
             await callback.answer("Ошибка", show_alert=True)
             return
 
-        goal = callback.data.replace("goal_", "")
+        goal = callback.data.replace("goal_", "") # type: ignore
         await state.update_data(goal=goal)
         
         data = await state.get_data()
+        calories = calculate_calories(data["height"], data["weight"], 
+                                      data["age"], data["gender"], 
+                                      data["activity"], data["goal"])
 
-        await callback.message.edit_text(
+        await callback.message.edit_text( # type: ignore
             "Регистрация завершена ✅\n"
             f"Рост: {data['height']} см\n"
             f"Вес: {data['weight']} кг\n"
             f"Возраст: {data['age']}\n"
             f"Пол: {data['gender']}\n"
             f"Активность: {data['activity']}\n"
-            f"Цель: {data['goal']}"
+            f"Цель: {data['goal']}\n"
+            f"Норма калорий на день: {calories}"
         )
 
         await callback.answer()
