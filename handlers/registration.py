@@ -10,6 +10,10 @@ from keyboards.goal import goal_keyboard
 from services.validators import validate_int
 from services.calories import calculate_calories
 
+from mappers.goal_mapper import goal_mapper
+from mappers.activity_mapper import activity_mapper
+from mappers.gender_mapper import gender_mapper
+
 
 
 def register_registration_handlers(dp):
@@ -112,18 +116,26 @@ def register_registration_handlers(dp):
         await state.update_data(goal=goal)
         
         data = await state.get_data()
-        calories = calculate_calories(data["height"], data["weight"], 
-                                      data["age"], data["gender"], 
-                                      data["activity"], data["goal"])
+        
+        goal_label = goal_mapper(data)
+        activity_label = activity_mapper(data)
+        gender_label = gender_mapper(data)        
+        
+        calories = calculate_calories(data["height"],
+                                      data["weight"],
+                                      data["age"],
+                                      data["gender"], 
+                                      data["activity"],
+                                      data["goal"])
 
         await callback.message.edit_text( # type: ignore
             "Регистрация завершена ✅\n"
             f"Рост: {data['height']} см\n"
             f"Вес: {data['weight']} кг\n"
             f"Возраст: {data['age']}\n"
-            f"Пол: {data['gender']}\n"
-            f"Активность: {data['activity']}\n"
-            f"Цель: {data['goal']}\n"
+            f"Пол: {gender_label["gender"]}\n" # type: ignore
+            f"Активность: {activity_label["activity"]}\n" # type: ignore
+            f"Цель: {goal_label["goal"]}\n" # type: ignore
             f"Норма калорий на день: {calories}"
         )
 
