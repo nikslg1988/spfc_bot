@@ -3,7 +3,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from config import BOT_TOKEN
-from handlers.registration import register_registration_handlers
+from handlers.registration import router as registration_router
+from handlers.food_analysis import router as food_analysis_router
+
 from utils.logger import setup_logging
 
 import logging
@@ -21,7 +23,8 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
 
-    register_registration_handlers(dp)
+    dp.include_router(registration_router)
+    dp.include_router(food_analysis_router)
 
 
     await dp.start_polling(bot)
