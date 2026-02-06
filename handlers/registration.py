@@ -7,6 +7,7 @@ from keyboards.gender import gender_keyboard
 from keyboards.activity import activity_keyboard
 
 from keyboards.goal import goal_keyboard
+from keyboards.food_reply import food_analysis_keyboard
 from services.validators import validate_int
 from services.calories import calculate_calories
 
@@ -143,5 +144,10 @@ async def goal_handler(callback: types.CallbackQuery,
     #await state.clear() 
     #TODO Вернуть когда будет база данных пока затычка для сохранения daily_calories
     await state.update_data(daily_calories=calories)
+    await callback.message.answer(
+    "Что делаем дальше?",
+    reply_markup=food_analysis_keyboard()
+)
+
 
 

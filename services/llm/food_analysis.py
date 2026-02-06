@@ -1,15 +1,125 @@
+import logging
+from config import DEEPSEEK_API_KEY 
+from aiohttp import ClientSession, ClientTimeout
 
-def analyze_food(food_text: str, daily_calories: int) -> str:
-    '''Функция для анализа пищи с помощью LLM
-    входные параметры: food_text - текст о еде, daily_calories - суточная норма калорий
-    возвращает: текстовый анализ
-    гарантия: всегда возвращает str, не выбрасывает исключения наружу
-    '''
+DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
+
+HEADERS = {
+    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+    "Content-Type": "application/json",
+}
+
+
+async def analyze_food(food_text: str, daily_calories: int) -> str:
+    """
+    Функция для анализа пищи с помощью LLM.
+
+    Входные параметры:
+    - food_text: текстовое описание еды
+    - daily_calories: суточная норма калорий пользователя
+
+    Возвращает:
+    - текстовый результат анализа
+
+    Гарантии:
+    - всегда возвращает str
+    - не выбрасывает исключения наружу
+    """
     
     fallback_text = (
         "Извините, не удалось проанализировать вашу еду в данный момент. "
         "Пожалуйста, попробуйте снова позже."
     )
+    
+    try:
+        prompt = _build_prompt(food_text, daily_calories)
+        answer = await _call_llm(prompt)
+        if not isinstance(answer, str) or len(answer.strip()) == 0:
+            return fallback_text
+        return answer
+    
+    except Exception as exc:
+        logging.exception("LLM error in analyze_food")
+        return fallback_text
+    
+async def _call_llm(prompt: str) -> str:
+    """
+    Асинхронный вызов LLM.
+
+    Принимает:
+    - prompt: готовый текст запроса
+
+    Возвращает:
+    - строку с ответом модели
+
+    Гарантии:
+    - всегда возвращает str
+    - не выбрасывает исключения наружу
+    """
+    try:
+
+        headers = {
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        async with ClientSession() as session:
+            async with session.post(
+                DEEPSEEK_URL,
+                headers=headers,
+                json=payload,
+                timeout=ClientTimeout(total=20),
+            ) as response:
+
+                raw_text = await response.text()
+                print("LLM RAW RESPONSE:")
+                print(raw_text)
+
+                if response.status != 200:
+                    print("LLM NON-200 STATUS")
+                    return ""
+
+                data = await response.json()
+
+                choices = data.get("choices")
+                if not choices or not isinstance(choices, list):
+                    print("LLM NO CHOICES")
+                    return ""
+
+                message = choices[0].get("message", {})
+                content = message.get("content")
+
+                if not isinstance(content, str):
+                    return ""
+
+                return content.strip()
+
+    except Exception as exc:
+        return ""
+
+
+def _build_prompt(food_text: str, daily_calories: int) -> str:
+    """
+    Формирование промта
+    Принимает: 
+    - food_text: 
+    - daily_calories:
+    
+    Возвращает:
+    строку
+    
+    Гарантии:
+    - всегда возвращает str
+    - не выбрасывает исключения наружу
+    
+    """
 
     prompt = f"""РОЛЬ И НАЗНАЧЕНИЕ
 
@@ -24,11 +134,14 @@ def analyze_food(food_text: str, daily_calories: int) -> str:
 
     ВХОДНЫЕ ДАННЫЕ (ТЫ ПОЛУЧАЕШЬ ИХ В ЯВНОМ ВИДЕ)
 
-    Текстовое описание еды в свободной форме
+    Текстовое описание еды в свободной форме: 
     (например: «гречка 200 г, курица 150 г, яблоко»).
 
     Суточная норма калорий пользователя — одно целое число
     (например: 2200).
+    
+    Описание еды: {food_text}
+    Суточная норма калорий: {daily_calories}
 
     Ты не должен догадываться, как была получена суточная норма,
     и не должен делать предположений о пользователе
@@ -95,6 +208,4 @@ def analyze_food(food_text: str, daily_calories: int) -> str:
     без оценок личности пользователя.
     
     """
-    
-    
-    #TODO: интеграция с LLM для получения ответа по prompt и обработка ошибок
+    return prompt

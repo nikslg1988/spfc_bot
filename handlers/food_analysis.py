@@ -10,7 +10,7 @@ router = Router()
 @router.message(F.text == "🍽 Анализ еды")
 async def entry_text_handler(message: types.Message, state: FSMContext):
     
-    await state.clear()
+    #await state.clear() # Не работает пока нет БД TODO
     await state.set_state(FoodAnalysis.waiting_text)
     await message.answer("Опиши, что ты съел(а), одной строкой")
     
@@ -20,7 +20,7 @@ async def waiting_text_handler(message: types.Message, state: FSMContext):
     food_text = message.text
     data = await state.get_data()
     daily_calories = data["daily_calories"]
-    result_text = analyze_food(food_text, daily_calories) # type: ignore
+    result_text = await analyze_food(food_text, daily_calories) # type: ignore
     
     await message.answer(
         result_text,
